@@ -1,20 +1,62 @@
-import 'package:casetracking/features/assign_cases/screens/assign_screen.dart';
+import 'package:casetracking/features/assign_cases/bloc/assign_case_bloc.dart';
+import 'package:casetracking/features/assign_cases/repository/assign_case_repository.dart';
 import 'package:casetracking/features/assign_cases/screens/assign_screen_admin.dart';
+import 'package:casetracking/features/assign_cases/screens/assign_stage1_screen.dart';
+import 'package:casetracking/features/assign_cases/screens/assign_stage2_screen.dart';
+import 'package:casetracking/features/assign_cases/screens/assign_stage3_screen.dart';
 import 'package:casetracking/features/authentication/Screens/login_screen.dart';
+import 'package:casetracking/features/authentication/Screens/update_password.dart';
+import 'package:casetracking/features/authentication/Screens/update_user.dart';
+import 'package:casetracking/features/authentication/bloc/auth_bloc.dart';
 import 'package:casetracking/features/home/screens/homescreen.dart';
-import 'package:casetracking/features/recieve_cases/screens/receive_case_screen.dart';
+import 'package:casetracking/features/master_api/box_size/bloc/box_size_bloc.dart';
+import 'package:casetracking/features/master_api/box_size/bloc/box_size_event.dart';
+import 'package:casetracking/features/master_api/department/bloc/department_bloc.dart';
+import 'package:casetracking/features/master_api/department/bloc/department_event.dart';
+import 'package:casetracking/features/master_api/parties/bloc/parties_bloc.dart';
+import 'package:casetracking/features/master_api/parties/bloc/parties_event.dart';
+import 'package:casetracking/features/master_api/repositories/masterrepo.dart';
+import 'package:casetracking/features/recieve_cases/bloc/recieve_case_bloc.dart';
+import 'package:casetracking/features/recieve_cases/screens/receive_case_stage1_screen.dart';
 import 'package:casetracking/features/recieve_cases/screens/receive_case_screen_admin.dart';
-import 'package:casetracking/features/reports/screens/reports_screen.dart';
+import 'package:casetracking/features/recieve_cases/screens/receive_case_stage2_screen.dart';
+import 'package:casetracking/features/recieve_cases/screens/receive_case_stage3_screen.dart';
+import 'package:casetracking/features/recieve_pending_barcode/bloc/receieve_pending_bloc.dart';
+import 'package:casetracking/features/recieve_pending_barcode/bloc/receieve_pending_event.dart';
+import 'package:casetracking/features/reports/bloc/report_bloc.dart';
+import 'package:casetracking/features/reports/bloc/report_event.dart';
+
+import 'package:casetracking/features/reports/screens/pending_report.dart';
+import 'package:casetracking/features/reports/screens/assigned_report.dart';
+import 'package:casetracking/features/reports/screens/received_report.dart';
+import 'package:casetracking/features/reports/screens/reports_homescreen.dart';
+import 'package:casetracking/features/splash/splashscreen.dart';
+import 'package:casetracking/features/userList/bloc/user_list_bloc.dart';
+import 'package:casetracking/features/userList/bloc/user_list_event.dart';
+import 'package:casetracking/features/userList/repository/user_list_repo.dart';
+import 'package:casetracking/features/userList/screens/user_list_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 enum Routes {
   login,
   home,
-  assign,
+  assign1,
+  assign2,
+  assign3,
   assignAdmin,
-  receive,
+  receive1,
+  receive2,
+  receive3,
   receiveAdmin,
-  reportsScreen,
+  adminReports,
+  pendingReports,
+  assignedReports,
+  receivedReports,
+  splash,
+  updateuser,
+  updatePassword,
+  userlist,
 }
 
 GoRouter router = GoRouter(
@@ -22,38 +64,258 @@ GoRouter router = GoRouter(
   routes: [
     GoRoute(
       path: "/",
-      builder: (context, state) => LoginScreen(),
+      builder: (context, state) => Splashscreen(),
+      name: Routes.splash.name,
+    ),
+
+    GoRoute(
+      path: "/login",
+      builder: (context, state) =>
+          BlocProvider(create: (context) => AuthBloc(), child: LoginScreen()),
       name: Routes.login.name,
     ),
+    GoRoute(
+      path: "/updateuser",
+      name: Routes.updateuser.name,
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>;
+
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => AuthBloc()),
+            BlocProvider(
+              create: (_) =>
+                  DepartmentBloc(MasterRepo())..add(const FetchDepartments()),
+            ),
+          ],
+          child: UpdateUserScreen(
+            userId: data['id'] as int,
+            fullname: data['fullname'] as String,
+            email: data['email'] as String,
+            departmentId: data['departmentId'] as int,
+          ),
+        );
+      },
+    ),
+
+    GoRoute(
+      path: "/updatepassword",
+      name: Routes.updatePassword.name,
+      builder: (context, state) {
+        final userId = state.extra as int;
+
+        return BlocProvider(
+          create: (_) => AuthBloc(),
+          child: UpdatePasswordScreen(userid: userId),
+        );
+      },
+    ),
+
     GoRoute(
       path: "/home",
       builder: (context, state) => HomeScreen(),
       name: Routes.home.name,
     ),
     GoRoute(
-      path: "/assign",
-      builder: (context, state) => AssignCaseScreen(),
-      name: Routes.assign.name,
+      path: "/userlist",
+      builder: (context, state) => BlocProvider(
+        create: (context) =>
+            UserListBloc(repo: UserListRepo())..add(FetchUserList()),
+        child: UserListScreen(),
+      ),
+      name: Routes.userlist.name,
     ),
+
+    GoRoute(
+      path: "/assign1",
+      name: Routes.assign1.name,
+      builder: (context, state) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => AssignCaseBloc(AssignCaseRepository())),
+            BlocProvider(
+              create: (_) =>
+                  DepartmentBloc(MasterRepo())..add(const FetchDepartments()),
+            ),
+            BlocProvider(
+              create: (_) => BoxSizeBloc(MasterRepo())..add(FetchBoxSizes()),
+            ),
+          ],
+          child: AssignStage1Screen(),
+        );
+      },
+    ),
+
+    GoRoute(
+      path: "/assign2",
+      name: Routes.assign2.name,
+      builder: (context, state) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => AssignCaseBloc(AssignCaseRepository())),
+
+            BlocProvider(
+              create: (_) =>
+                  DepartmentBloc(MasterRepo())..add(const FetchDepartments()),
+            ),
+
+            BlocProvider(
+              create: (_) =>
+                  BoxSizeBloc(MasterRepo())..add(const FetchBoxSizes()),
+            ),
+
+            BlocProvider(
+              create: (_) => PartyBloc(MasterRepo())..add(const FetchParties()),
+            ),
+          ],
+          child: const AssignStage2Screen(),
+        );
+      },
+    ),
+
+    GoRoute(
+      path: "/assign3",
+      name: Routes.assign3.name,
+      builder: (context, state) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => AssignCaseBloc(AssignCaseRepository())),
+            BlocProvider(
+              create: (_) =>
+                  DepartmentBloc(MasterRepo())..add(const FetchDepartments()),
+            ),
+            BlocProvider(
+              create: (_) =>
+                  BoxSizeBloc(MasterRepo())..add(const FetchBoxSizes()),
+            ),
+          ],
+          child: const AssignStage3Screen(),
+        );
+      },
+    ),
+
     GoRoute(
       path: "/assignadmin",
-      builder: (context, state) => AssignCaseScreenAdmin(),
+      builder: (context, state) => AssignAdminScreen(),
       name: Routes.assignAdmin.name,
     ),
+
     GoRoute(
-      path: "/receive",
-      builder: (context, state) => ReceiveCaseScreen(),
-      name: Routes.receive.name,
+      path: "/receive2",
+      name: Routes.receive2.name,
+      builder: (context, state) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) =>
+                  PendingBarcodeBloc()..add(const FetchPendingBarcodes()),
+            ),
+
+            BlocProvider(create: (_) => ReceiveBloc()),
+          ],
+          child: const ReceiveStage2Screen(),
+        );
+      },
     ),
+    GoRoute(
+      path: "/receive1",
+      name: Routes.receive1.name,
+      builder: (context, state) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) =>
+                  PendingBarcodeBloc()..add(const FetchPendingBarcodes()),
+            ),
+
+            BlocProvider(create: (_) => ReceiveBloc()),
+          ],
+          child: const ReceiveStage1Screen(),
+        );
+      },
+    ),
+    GoRoute(
+      path: "/receive3",
+      name: Routes.receive3.name,
+      builder: (context, state) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) =>
+                  PendingBarcodeBloc()..add(const FetchPendingBarcodes()),
+            ),
+
+            BlocProvider(create: (_) => ReceiveBloc()),
+          ],
+          child: const ReceiveStage3Screen(),
+        );
+      },
+    ),
+
     GoRoute(
       path: "/receiveAdmin",
       builder: (context, state) => ReceiveCaseScreenAdmin(),
       name: Routes.receiveAdmin.name,
     ),
-    GoRoute(
-      path: "/reportsScreen",
-      builder: (context, state) => ReportsScreen(),
-      name: Routes.reportsScreen.name,
+    ShellRoute(
+      builder: (context, state, child) {
+        return ReportsHomescreen(child: child);
+      },
+      routes: [
+        GoRoute(
+          path: "/pendingReports",
+          name: Routes.pendingReports.name,
+          builder: (context, state) {
+            return MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => ReportBloc()..add(PendingToReceivedFetch()),
+                ),
+                BlocProvider(
+                  create: (_) =>
+                      BoxSizeBloc(MasterRepo())..add(FetchBoxSizes()),
+                ),
+              ],
+              child: PendingReport(),
+            );
+          },
+        ),
+        GoRoute(
+          path: "/assignedReports",
+          name: Routes.assignedReports.name,
+          builder: (context, state) {
+            return MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => ReportBloc()..add(AssignedReportFetch()),
+                ),
+                BlocProvider(
+                  create: (_) =>
+                      BoxSizeBloc(MasterRepo())..add(FetchBoxSizes()),
+                ),
+              ],
+              child: AssignedReport(),
+            );
+          },
+        ),
+
+        GoRoute(
+          path: "/receivedReports",
+          name: Routes.receivedReports.name,
+          builder: (context, state) {
+            return MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => ReportBloc()),
+                BlocProvider(
+                  create: (_) =>
+                      BoxSizeBloc(MasterRepo())..add(FetchBoxSizes()),
+                ),
+              ],
+              child: ReceivedReport(),
+            );
+          },
+        ),
+      ],
     ),
   ],
 );

@@ -1,9 +1,16 @@
 import 'package:casetracking/core/routes/routes.dart';
+import 'package:casetracking/core/services/local_db.dart';
+import 'package:casetracking/core/services/token_service.dart';
+import 'package:casetracking/features/authentication/bloc/auth_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 void main() {
   runApp(CaseTracking());
+  WidgetsFlutterBinding.ensureInitialized();
+
+  TokenServices().loadToken();
 }
 
 class CaseTracking extends StatelessWidget {
@@ -13,10 +20,14 @@ class CaseTracking extends StatelessWidget {
   Widget build(BuildContext context) {
     return ScreenUtilInit(
       designSize: Size(412, 915),
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        color: Colors.white,
-        routerConfig: router,
+      child: MultiBlocProvider(
+        providers: [BlocProvider<AuthBloc>(create: (context) => AuthBloc())],
+
+        child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          color: Colors.white,
+          routerConfig: router,
+        ),
       ),
     );
   }

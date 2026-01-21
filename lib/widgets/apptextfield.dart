@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AppTextField extends StatelessWidget {
-  final String hint;
+  final String? hint;
   final String title;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
@@ -22,7 +22,7 @@ class AppTextField extends StatelessWidget {
   const AppTextField({
     super.key,
     required this.title,
-    required this.hint,
+    this.hint,
     this.controller,
     this.keyboardType,
     this.obscureText = false,
@@ -80,7 +80,7 @@ class AppTextField extends StatelessWidget {
             color: Colors.black,
           ),
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: hint ?? "",
             filled: true,
             fillColor: AppColors.primaryLight,
             prefixIcon: prefixIcon,

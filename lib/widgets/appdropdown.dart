@@ -1,17 +1,16 @@
 import 'package:casetracking/core/consts/appcolors.dart';
 import 'package:flutter/material.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:shimmer/shimmer.dart';
 
 class AppDropdown<T> extends StatelessWidget {
   final String title;
   final String hint;
-
   final List<T> items; // ✅ generic
   final T? value; // ✅ generic
   final void Function(T?) onChanged; // ✅ generic
   final bool isRequired;
 
-  /// 👇 NEW: how to show item text
   final String Function(T)? itemLabel;
 
   const AppDropdown({
@@ -125,6 +124,110 @@ class AppDropdown<T> extends StatelessWidget {
           menuItemStyleData: const MenuItemStyleData(
             height: 40,
             padding: EdgeInsets.symmetric(horizontal: 12),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AppDropdown2<T> extends StatelessWidget {
+  final String title;
+  final String hint;
+  final List<T> items;
+  final T? value;
+  final String Function(T) label;
+  final ValueChanged<T?> onChanged;
+
+  const AppDropdown2({
+    super.key,
+    required this.title,
+    required this.hint,
+    required this.items,
+    required this.value,
+    required this.label,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<T>(
+          isExpanded: true,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.primaryLight,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+          ),
+          value: value,
+          hint: Text(hint),
+          items: items
+              .map((e) => DropdownMenuItem<T>(value: e, child: Text(label(e))))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class AppDropdownShimmer extends StatelessWidget {
+  final String title;
+
+  const AppDropdownShimmer({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        /// Label shimmer
+        Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Container(
+            width: 120,
+            height: 14,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 6),
+
+        /// Dropdown box shimmer
+        Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Container(
+            height: 48,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            ),
           ),
         ),
       ],

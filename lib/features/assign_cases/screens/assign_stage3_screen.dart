@@ -1,35 +1,44 @@
 import 'package:casetracking/core/consts/appcolors.dart';
+import 'package:casetracking/core/consts/snack_bar.dart';
+import 'package:casetracking/features/assign_cases/bloc/assign_case_bloc.dart';
+import 'package:casetracking/features/assign_cases/bloc/assign_case_event.dart';
+import 'package:casetracking/features/assign_cases/bloc/assign_case_state.dart';
+
 import 'package:casetracking/features/assign_cases/widgets/barcode_scanner.dart';
+import 'package:casetracking/features/master_api/box_size/bloc/box_size_bloc.dart';
+import 'package:casetracking/features/master_api/box_size/bloc/box_size_state.dart';
+import 'package:casetracking/features/master_api/department/bloc/department_bloc.dart';
+import 'package:casetracking/features/master_api/department/bloc/department_state.dart';
+import 'package:casetracking/features/master_api/models/box_size_model.dart';
+import 'package:casetracking/features/master_api/models/department_model.dart';
+import 'package:casetracking/features/master_api/models/party_model.dart';
+import 'package:casetracking/features/master_api/parties/bloc/parties_bloc.dart';
+import 'package:casetracking/features/master_api/parties/bloc/parties_state.dart';
 import 'package:casetracking/widgets/appdropdown.dart';
 import 'package:casetracking/widgets/apptextfield.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
-class AssignCaseScreen extends StatefulWidget {
-  const AssignCaseScreen({super.key});
+class AssignStage3Screen extends StatefulWidget {
+  const AssignStage3Screen({super.key});
 
   @override
-  State<AssignCaseScreen> createState() => _AssignCaseScreenState();
+  State<AssignStage3Screen> createState() => _AssignStage3ScreenState();
 }
 
-class _AssignCaseScreenState extends State<AssignCaseScreen> {
-  String? selectedCompany;
-  final List<String> scannedCases = [];
-  final TextEditingController manualController = TextEditingController();
+class _AssignStage3ScreenState extends State<AssignStage3Screen> {
+  List<String> errorBarcodes = [];
 
-  final TextEditingController locationController = TextEditingController(
-    text: "Warehouse A",
-  );
+  DepartmentModel? _selectedLocation;
+  BoxSizeModel? _selectedSize;
+  final List<String> scannedCases = [];
+  final TextEditingController barcodeController = TextEditingController();
+
+  final TextEditingController locationController = TextEditingController();
 
   late DateTime assignedDateTime;
-
-  final List<String> companies = [
-    'ABC Logistics',
-    'Delta Services',
-    'Omega Works',
-    'Rapid Movers',
-  ];
 
   @override
   void initState() {
@@ -38,14 +47,13 @@ class _AssignCaseScreenState extends State<AssignCaseScreen> {
   }
 
   void addCaseFromField() {
-    final code = manualController.text.trim();
+    final code = barcodeController.text.trim();
     if (code.isEmpty) return;
 
     if (!scannedCases.contains(code)) {
       setState(() => scannedCases.add(code));
     }
-
-    manualController.clear();
+    barcodeController.clear();
   }
 
   Future<void> scanCase() async {
@@ -54,13 +62,10 @@ class _AssignCaseScreenState extends State<AssignCaseScreen> {
       MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
     );
 
-    if (result == null) return;
+    if (result == null || result.trim().isEmpty) return;
 
-    final code = result.trim();
-    if (code.isEmpty) return;
-
-    if (!scannedCases.contains(code)) {
-      setState(() => scannedCases.add(code));
+    if (!scannedCases.contains(result)) {
+      setState(() => scannedCases.add(result.trim()));
     }
   }
 
@@ -105,73 +110,123 @@ class _AssignCaseScreenState extends State<AssignCaseScreen> {
   }
 
   void assignCases() {
-    if (selectedCompany == null || scannedCases.isEmpty) return;
+    if (_selectedLocation == null || scannedCases.isEmpty) return;
 
-    final dateStr = DateFormat('dd MMM yyyy').format(assignedDateTime);
-    final timeStr = DateFormat('hh:mm a').format(assignedDateTime);
+    context.read<AssignCaseBloc>().add(
+      AssignCasesStage3Event(
+        locationId: _selectedLocation!.id,
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.success,
-        content: Text(
-          '${scannedCases.length} cases assigned to $selectedCompany\n$dateStr • $timeStr • ${locationController.text}',
-        ),
+        boxSizeId: _selectedSize!.id,
+        barcodes: scannedCases,
+        date: DateFormat('yyyy-MM-dd').format(assignedDateTime),
+        time: DateFormat('HH:mm').format(assignedDateTime),
       ),
     );
-
-    setState(() {
-      scannedCases.clear();
-      selectedCompany = null;
-      manualController.clear();
-    });
   }
 
   @override
   void dispose() {
-    manualController.dispose();
+    barcodeController.dispose();
     locationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool hasText = manualController.text.isNotEmpty;
+    final bool hasText = barcodeController.text.isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: const BackButton(color: Colors.white),
-        centerTitle: true,
-        title: const Text('Assign Cases'),
+        title: const Text('Assign Cases – Stage 3'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        centerTitle: true,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
+      body: BlocListener<AssignCaseBloc, AssignCaseState>(
+        listener: (context, state) {
+          if (state is AssignCase2Loading) {
+            // optional: show loader
+          }
+
+          if (state is AssignCase3Success) {
+            showCenterNotification(context, message: state.message);
+
+            setState(() {
+              scannedCases.clear();
+              barcodeController.clear();
+              _selectedSize = null;
+              _selectedLocation = null;
+            });
+          }
+
+          if (state is AssignCase3Failure) {
+            snackbar(context, message: state.error, color: Colors.red);
+            setState(() {
+              errorBarcodes = state.failedBarcodes;
+            });
+          }
+        },
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 /// ASSIGN META
-                _CardContainer(
+                _Card(
                   child: Column(
                     children: [
-                      AppDropdown(
-                        title: "Select Company",
-                        hint: "Choose company",
-                        items: companies,
-                        value: selectedCompany,
-                        onChanged: (String? value) {
-                          setState(() => selectedCompany = value);
+                      const SizedBox(height: 12),
+                      BlocBuilder<DepartmentBloc, DepartmentState>(
+                        builder: (context, state) {
+                          if (state is DepartmentLoading) {
+                            return AppDropdownShimmer(title: "Select location");
+                          }
+
+                          if (state is DepartmentLoaded) {
+                            return AppDropdown<DepartmentModel>(
+                              title: "Select Location",
+                              hint: "Choose Location",
+                              items: state.departments,
+                              value: _selectedLocation,
+                              itemLabel: (d) => d.name,
+                              onChanged: (value) {
+                                setState(() => _selectedLocation = value);
+                              },
+                            );
+                          }
+
+                          return const SizedBox.shrink();
                         },
                       ),
+
                       const SizedBox(height: 12),
-                      AppTextField(
-                        title: "Location",
-                        controller: locationController,
-                        hint: "Enter location",
+
+                      BlocBuilder<BoxSizeBloc, BoxSizeState>(
+                        builder: (context, state) {
+                          if (state is BoxSizeLoading) {
+                            return AppDropdownShimmer(title: "Select Box");
+                          }
+
+                          if (state is BoxSizeLoaded) {
+                            return AppDropdown<BoxSizeModel>(
+                              title: "Select Box Size",
+                              hint: "Choose Size",
+                              items: state.sizes,
+                              value: _selectedSize,
+                              itemLabel: (b) =>
+                                  "${b.length}x${b.width}x${b.height}",
+                              onChanged: (value) {
+                                setState(() => _selectedSize = value);
+                              },
+                            );
+                          }
+
+                          return const SizedBox.shrink();
+                        },
                       ),
+
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -202,8 +257,8 @@ class _AssignCaseScreenState extends State<AssignCaseScreen> {
 
                 const SizedBox(height: 16),
 
-                /// CASES CARD
-                _CardContainer(
+                /// CASE LIST
+                _Card(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -214,9 +269,9 @@ class _AssignCaseScreenState extends State<AssignCaseScreen> {
                         children: [
                           Expanded(
                             child: AppTextField(
-                              controller: manualController,
+                              controller: barcodeController,
                               title: "Enter Barcode",
-                              hint: "ABC-abc-1234",
+                              hint: "ABC-123",
                               onChanged: (_) => setState(() {}),
                             ),
                           ),
@@ -225,11 +280,8 @@ class _AssignCaseScreenState extends State<AssignCaseScreen> {
                             height: 50.h,
                             width: 50.w,
                             child: IconButton.filled(
-                              style: ElevatedButton.styleFrom(
+                              style: IconButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
                               ),
                               onPressed: hasText ? addCaseFromField : scanCase,
                               icon: Icon(
@@ -260,21 +312,17 @@ class _AssignCaseScreenState extends State<AssignCaseScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 54.h,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                     ),
                     onPressed:
-                        selectedCompany != null && scannedCases.isNotEmpty
+                        _selectedLocation != null && scannedCases.isNotEmpty
                         ? assignCases
                         : null,
-                    icon: const Icon(
-                      Icons.assignment_turned_in,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
+                    child: const Text(
                       'Assign Cases',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
                 ),
@@ -286,27 +334,61 @@ class _AssignCaseScreenState extends State<AssignCaseScreen> {
     );
   }
 
-  Row _caseTile(int index) {
-    return Row(
-      children: [
-        Icon(Icons.inventory_2, color: AppColors.primary),
-        SizedBox(width: 12.w),
-        Expanded(
-          child: Text(
-            scannedCases[index],
-            style: const TextStyle(color: AppColors.textPrimary),
+  Widget _caseTile(int index) {
+    final code = scannedCases[index];
+    final bool isError = errorBarcodes.contains(code);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: isError ? Colors.red.withOpacity(0.08) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isError ? Colors.red : Colors.transparent,
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.inventory_2,
+            color: isError ? Colors.red : AppColors.primary,
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.delete),
-          onPressed: () => setState(() => scannedCases.removeAt(index)),
-        ),
-      ],
+          SizedBox(width: 12.w),
+
+          Expanded(
+            child: Text(
+              code,
+              style: TextStyle(
+                color: isError ? Colors.red : AppColors.textPrimary,
+                fontWeight: isError ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+
+          if (isError)
+            const Padding(
+              padding: EdgeInsets.only(right: 6),
+              child: Icon(Icons.error, color: Colors.red, size: 18),
+            ),
+
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () {
+              setState(() {
+                scannedCases.removeAt(index);
+                errorBarcodes.remove(code); // ✅ keep clean
+              });
+            },
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// INFO TILE (DATE / TIME)
+/// INFO TILE
 class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
@@ -341,10 +423,7 @@ class _InfoTile extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -352,11 +431,10 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-/// REUSABLE CARD
-class _CardContainer extends StatelessWidget {
+/// CARD
+class _Card extends StatelessWidget {
   final Widget child;
-
-  const _CardContainer({required this.child});
+  const _Card({required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -365,19 +443,16 @@ class _CardContainer extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
       ),
       child: child,
     );
   }
 }
 
-/// SECTION TITLE
+/// TITLE
 class _SectionTitle extends StatelessWidget {
   final String text;
-
   const _SectionTitle(this.text);
 
   @override

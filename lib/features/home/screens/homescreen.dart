@@ -1,91 +1,144 @@
 import 'package:casetracking/core/consts/appcolors.dart';
+import 'package:casetracking/core/consts/user_context.dart';
 import 'package:casetracking/core/routes/routes.dart';
+import 'package:casetracking/core/services/local_db.dart';
+import 'package:casetracking/features/authentication/Screens/login_screen.dart';
+import 'package:casetracking/features/authentication/bloc/auth_bloc.dart';
+import 'package:casetracking/features/authentication/bloc/auth_event.dart';
+import 'package:casetracking/features/authentication/bloc/auth_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
 
-  bool isAdmin = false;
+  Future<UserContext> _loadContext() async {
+    final roleId = await LocalDb.getRoleId();
+    final deptId = await LocalDb.getDepartmentId();
+
+    return UserContext(roleId: roleId ?? "", departmentId: deptId ?? "");
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      floatingActionButton: RoleFab(
-        onAdminTap: () {
-          isAdmin = true;
-          print(isAdmin);
-        },
-        onStaffTap: () {
-          isAdmin = false;
-          print(isAdmin);
-        },
-      ),
-      appBar: AppBar(
-        title: const Text('Case Operations'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              router.goNamed(Routes.login.name);
-            },
-          ),
-        ],
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _ActionCard(
-                icon: Icons.assignment_ind,
-                title: 'Assign Cases',
-                subtitle: 'Scan & assign cases to a company',
-                color: AppColors.primaryLight,
-                onTap: () {
-                  isAdmin
-                      ? router.pushNamed(Routes.assignAdmin.name)
-                      : router.pushNamed(Routes.assign.name);
+    return FutureBuilder(
+      future: _loadContext(),
+      builder: (context, asyncSnapshot) {
+        if (!asyncSnapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final user = asyncSnapshot.data!;
+        final isAdmin = user.isAdmin;
+        final isStage1 = user.departmentId == "1";
+        final isStage2 = user.departmentId == "2";
+        final isStage3 = user.departmentId == "3";
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+
+          appBar: AppBar(
+            title: const Text('Case Operations'),
+            actions: [
+              BlocListener<AuthBloc, AuthState>(
+                listener: (context, state) {
+                  if (state is LogoutState) {
+                    router.goNamed(Routes.login.name);
+                  }
                 },
-              ),
-              const SizedBox(height: 20),
-
-              _ActionCard(
-                icon: Icons.assignment_turned_in,
-                title: 'Receive Cases',
-                subtitle: 'Scan returned cases from company',
-                color: AppColors.card,
-                onTap: () {
-                  isAdmin
-                      ? router.pushNamed(Routes.receiveAdmin.name)
-                      : router.pushNamed(Routes.receive.name);
-                },
-              ),
-              const SizedBox(height: 20),
-
-              _ActionCard(
-                icon: Icons.list_alt_sharp,
-                title: 'Reports',
-                subtitle: "View case assignment and reception reports",
-                color: AppColors.card,
-                onTap: () {
-                  isAdmin ? router.pushNamed(Routes.reportsScreen.name) : null;
-                },
-              ),
-
-              const Spacer(),
-
-              Text(
-                'Scan → Assign → Receive → Track',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                child: IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: () {
+                    showConfirmLogoutDialog(context);
+                  },
+                ),
               ),
             ],
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
           ),
-        ),
-      ),
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _ActionCard(
+                    icon: Icons.assignment_ind,
+                    title: 'Assign Cases',
+                    subtitle: 'Scan & assign cases',
+                    color: Colors.white,
+                    onTap: () {
+                      if (isStage1) {
+                        router.pushNamed(Routes.assign1.name);
+                      } else if (isStage2) {
+                        router.pushNamed(Routes.assign2.name);
+                      } else if (isStage3) {
+                        router.pushNamed(Routes.assign3.name);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  _ActionCard(
+                    icon: Icons.assignment_turned_in,
+                    title: 'Receive Cases',
+                    subtitle: 'Scan returned cases from company',
+                    color: AppColors.card,
+                    onTap: () {
+                      if (isStage1) {
+                        router.pushNamed(Routes.receive1.name);
+                      } else if (isStage2) {
+                        router.pushNamed(Routes.receive2.name);
+                      } else if (isStage3) {
+                        router.pushNamed(Routes.receive3.name);
+                      }
+                    },
+                  ),
+                  20.verticalSpace,
+
+                  _ActionCard(
+                    icon: Icons.list_alt_sharp,
+                    title: 'Reports',
+                    subtitle: "View case assignment and reception reports",
+                    color: AppColors.card,
+                    onTap: () {
+                      router.pushNamed(Routes.pendingReports.name);
+                    },
+                  ),
+                  20.verticalSpace,
+
+                  isAdmin
+                      ? _ActionCard(
+                          icon: Icons.person_outlined,
+                          title: "Users",
+                          subtitle: "Users List & Management",
+                          color: Colors.white,
+                          onTap: () {
+                            router.pushNamed(Routes.userlist.name);
+                          },
+                        )
+                      : SizedBox.shrink(),
+
+                  20.verticalSpace,
+
+                  const Spacer(),
+
+                  Text(
+                    'Scan → Assign → Receive → Track',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -170,148 +223,52 @@ class _ActionCard extends StatelessWidget {
   }
 }
 
-class RoleFab extends StatefulWidget {
-  final VoidCallback onAdminTap;
-  final VoidCallback onStaffTap;
-
-  const RoleFab({
-    super.key,
-    required this.onAdminTap,
-    required this.onStaffTap,
-  });
-
-  @override
-  State<RoleFab> createState() => _RoleFabState();
-}
-
-class _RoleFabState extends State<RoleFab> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  bool isOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-  }
-
-  void toggle() {
-    setState(() {
-      isOpen = !isOpen;
-      isOpen ? _controller.forward() : _controller.reverse();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.bottomRight,
-      children: [
-        if (isOpen)
-          GestureDetector(
-            onTap: toggle,
-            child: Container(color: Colors.black38),
-          ),
-
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _FabOption(
-                icon: Icons.admin_panel_settings,
-                label: "Admin",
-                animation: _animation,
-                onTap: () {
-                  toggle();
-                  widget.onAdminTap();
-                },
-              ),
-              const SizedBox(height: 12),
-              _FabOption(
-                icon: Icons.badge,
-                label: "Staff",
-                animation: _animation,
-                onTap: () {
-                  toggle();
-                  widget.onStaffTap();
-                },
-              ),
-              const SizedBox(height: 16),
-
-              FloatingActionButton(
-                backgroundColor: AppColors.primary,
-                onPressed: toggle,
-                child: AnimatedIcon(
-                  icon: AnimatedIcons.menu_close,
-                  progress: _animation,
-                ),
-              ),
-            ],
-          ),
+Future<void> showConfirmLogoutDialog(BuildContext context) {
+  return showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.logout, color: Colors.red),
+            SizedBox(width: 8),
+            Text("Confirm Logout"),
+          ],
         ),
-      ],
-    );
-  }
-}
+        content: const Text(
+          "Are you sure you want to logout?\nYou will need to login again.",
+          style: TextStyle(fontSize: 14),
+        ),
+        actionsPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        actions: [
+          /// CANCEL
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
 
-class _FabOption extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Animation<double> animation;
-  final VoidCallback onTap;
-
-  const _FabOption({
-    required this.icon,
-    required this.label,
-    required this.animation,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: animation,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(color: Colors.black26, blurRadius: 4),
-              ],
-            ),
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+          /// LOGOUT
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          FloatingActionButton(
-            mini: true,
-            backgroundColor: AppColors.primary,
-            onPressed: onTap,
-            child: Icon(icon, color: Colors.white),
+            onPressed: () {
+              Navigator.pop(context);
+
+              context.read<AuthBloc>().add(LogoutEvent());
+            },
+            child: const Text("Logout", style: TextStyle(color: Colors.white)),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
 }

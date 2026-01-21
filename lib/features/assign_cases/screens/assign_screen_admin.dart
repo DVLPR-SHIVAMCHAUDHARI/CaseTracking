@@ -1,27 +1,28 @@
 import 'package:casetracking/core/consts/appcolors.dart';
 import 'package:casetracking/features/assign_cases/widgets/barcode_scanner.dart';
 import 'package:casetracking/widgets/apptextfield.dart';
+import 'package:casetracking/widgets/scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
-class AssignCaseScreenAdmin extends StatefulWidget {
-  const AssignCaseScreenAdmin({super.key});
+class AssignAdminScreen extends StatefulWidget {
+  const AssignAdminScreen({super.key});
 
   @override
-  State<AssignCaseScreenAdmin> createState() => _AssignCaseScreenAdminState();
+  State<AssignAdminScreen> createState() => _AssignAdminScreenState();
 }
 
-class _AssignCaseScreenAdminState extends State<AssignCaseScreenAdmin> {
+class _AssignAdminScreenState extends State<AssignAdminScreen> {
   final List<String> scannedCases = [];
-  final TextEditingController manualController = TextEditingController();
+  final TextEditingController barcodeController = TextEditingController();
 
   final TextEditingController assignToController = TextEditingController(
-    text: "Faridabad",
+    text: "Any Warehouse / Company",
   );
 
   final TextEditingController locationController = TextEditingController(
-    text: "Warehouse A",
+    text: "Admin Location",
   );
 
   late DateTime assignedDateTime;
@@ -33,14 +34,13 @@ class _AssignCaseScreenAdminState extends State<AssignCaseScreenAdmin> {
   }
 
   void addCaseFromField() {
-    final code = manualController.text.trim();
+    final code = barcodeController.text.trim();
     if (code.isEmpty) return;
 
     if (!scannedCases.contains(code)) {
       setState(() => scannedCases.add(code));
     }
-
-    manualController.clear();
+    barcodeController.clear();
   }
 
   Future<void> scanCase() async {
@@ -49,13 +49,10 @@ class _AssignCaseScreenAdminState extends State<AssignCaseScreenAdmin> {
       MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
     );
 
-    if (result == null) return;
+    if (result == null || result.trim().isEmpty) return;
 
-    final code = result.trim();
-    if (code.isEmpty) return;
-
-    if (!scannedCases.contains(code)) {
-      setState(() => scannedCases.add(code));
+    if (!scannedCases.contains(result)) {
+      setState(() => scannedCases.add(result));
     }
   }
 
@@ -109,20 +106,22 @@ class _AssignCaseScreenAdminState extends State<AssignCaseScreenAdmin> {
       SnackBar(
         backgroundColor: AppColors.success,
         content: Text(
-          '${scannedCases.length} cases assigned on $dateStr at $timeStr (${locationController.text})',
+          'Batch Assigned\n'
+          'Qty: ${scannedCases.length}\n'
+          '$dateStr • $timeStr • ${locationController.text}',
         ),
       ),
     );
 
     setState(() {
       scannedCases.clear();
-      manualController.clear();
+      barcodeController.clear();
     });
   }
 
   @override
   void dispose() {
-    manualController.dispose();
+    barcodeController.dispose();
     assignToController.dispose();
     locationController.dispose();
     super.dispose();
@@ -130,160 +129,121 @@ class _AssignCaseScreenAdminState extends State<AssignCaseScreenAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasText = manualController.text.isNotEmpty;
+    final bool hasText = barcodeController.text.isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: const BackButton(color: Colors.white),
-        centerTitle: true,
         title: const Text('Assign Cases (Admin)'),
+        centerTitle: true,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                /// ASSIGN META
-                _CardContainer(
-                  child: Column(
-                    children: [
-                      AppTextField(
-                        hint: "s",
-                        title: "Assigning To",
-                        controller: assignToController,
-                        readOnly: true,
-                      ),
-                      const SizedBox(height: 12),
-                      AppTextField(
-                        title: "Location",
-                        controller: locationController,
-                        hint: "Enter location",
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _InfoTile(
-                              label: "Date",
-                              value: DateFormat(
-                                'dd MMM yyyy',
-                              ).format(assignedDateTime),
-                              onTap: pickDate,
-                            ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              /// ASSIGN META
+              _Card(
+                child: Column(
+                  children: [
+                    AppTextField(
+                      title: "Assigning To",
+                      controller: assignToController,
+                      hint: "Warehouse / Company",
+                    ),
+                    const SizedBox(height: 12),
+                    AppTextField(
+                      title: "Location",
+                      controller: locationController,
+                      hint: "Enter location",
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _InfoTile(
+                            label: "Date",
+                            value: DateFormat(
+                              'dd MMM yyyy',
+                            ).format(assignedDateTime),
+                            onTap: pickDate,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _InfoTile(
-                              label: "Time",
-                              value: DateFormat(
-                                'hh:mm a',
-                              ).format(assignedDateTime),
-                              onTap: pickTime,
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _InfoTile(
+                            label: "Time",
+                            value: DateFormat(
+                              'hh:mm a',
+                            ).format(assignedDateTime),
+                            onTap: pickTime,
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              /// CASE LIST
+              _Card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionTitle('Scanned Cases (${scannedCases.length})'),
+                    const SizedBox(height: 12),
+                    CaseEntryRow(
+                      controller: barcodeController,
+                      onScan: scanCase,
+                      onAdd: addCaseFromField,
+                      onChanged: (_) => setState(() {}),
+                    ),
+
+                    const SizedBox(height: 12),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: scannedCases.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, index) => _caseTile(index),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              /// ASSIGN BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 54.h,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                  onPressed: scannedCases.isNotEmpty ? assignCases : null,
+                  child: const Text(
+                    'Assign Batch',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                /// CASES CARD
-                _CardContainer(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SectionTitle('Scanned Cases (${scannedCases.length})'),
-                      const SizedBox(height: 12),
-
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: AppTextField(
-                              controller: manualController,
-                              title: "Enter Barcode",
-                              hint: "ABC-abc-1234",
-                              onChanged: (_) => setState(() {}),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            height: 50.h,
-                            width: 50.w,
-                            child: IconButton.filled(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: manualController.text.isNotEmpty
-                                  ? addCaseFromField
-                                  : scanCase,
-                              icon: Icon(
-                                manualController.text.isNotEmpty
-                                    ? Icons.arrow_forward_ios
-                                    : Icons.qr_code_scanner,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: scannedCases.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (_, index) => _caseTile(index),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                /// ASSIGN BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 54.h,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                    ),
-                    onPressed: scannedCases.isNotEmpty ? assignCases : null,
-                    icon: const Icon(
-                      Icons.assignment_turned_in,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'Assign Cases',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Row _caseTile(int index) {
+  Widget _caseTile(int index) {
     return Row(
       children: [
-        Icon(Icons.inventory_2, color: AppColors.primary),
+        const Icon(Icons.inventory_2, color: AppColors.primary),
         SizedBox(width: 12.w),
         Expanded(
           child: Text(
@@ -300,7 +260,7 @@ class _AssignCaseScreenAdminState extends State<AssignCaseScreenAdmin> {
   }
 }
 
-/// INFO TILE FOR DATE/TIME
+/// INFO TILE
 class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
@@ -335,10 +295,7 @@ class _InfoTile extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -346,11 +303,10 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-/// REUSABLE CARD
-class _CardContainer extends StatelessWidget {
+/// CARD
+class _Card extends StatelessWidget {
   final Widget child;
-
-  const _CardContainer({required this.child});
+  const _Card({required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -359,19 +315,16 @@ class _CardContainer extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
       ),
       child: child,
     );
   }
 }
 
-/// SECTION TITLE
+/// TITLE
 class _SectionTitle extends StatelessWidget {
   final String text;
-
   const _SectionTitle(this.text);
 
   @override
