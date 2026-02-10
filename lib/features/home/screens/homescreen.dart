@@ -15,9 +15,9 @@ class HomeScreen extends StatelessWidget {
 
   Future<UserContext> _loadContext() async {
     final roleId = await LocalDb.getRoleId();
-    final deptId = await LocalDb.getDepartmentId();
+    final stageId = await LocalDb.getStageId();
 
-    return UserContext(roleId: roleId ?? "", departmentId: deptId ?? "");
+    return UserContext(roleId: roleId ?? "", stageId: stageId ?? "");
   }
 
   @override
@@ -32,9 +32,8 @@ class HomeScreen extends StatelessWidget {
         }
         final user = asyncSnapshot.data!;
         final isAdmin = user.isAdmin;
-        final isStage1 = user.departmentId == "1";
-        final isStage2 = user.departmentId == "2";
-        final isStage3 = user.departmentId == "3";
+        final isStage1 = user.stageId == "1";
+        final isStage2 = user.stageId == "2";
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -44,7 +43,7 @@ class HomeScreen extends StatelessWidget {
             actions: [
               BlocListener<AuthBloc, AuthState>(
                 listener: (context, state) {
-                  if (state is LogoutState) {
+                  if (state is LogoutSuccessState) {
                     router.goNamed(Routes.login.name);
                   }
                 },
@@ -75,8 +74,6 @@ class HomeScreen extends StatelessWidget {
                         router.pushNamed(Routes.assign1.name);
                       } else if (isStage2) {
                         router.pushNamed(Routes.assign2.name);
-                      } else if (isStage3) {
-                        router.pushNamed(Routes.assign3.name);
                       }
                     },
                   ),
@@ -92,8 +89,6 @@ class HomeScreen extends StatelessWidget {
                         router.pushNamed(Routes.receive1.name);
                       } else if (isStage2) {
                         router.pushNamed(Routes.receive2.name);
-                      } else if (isStage3) {
-                        router.pushNamed(Routes.receive3.name);
                       }
                     },
                   ),

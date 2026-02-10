@@ -9,13 +9,13 @@ class ReportRepo extends Repository {
     int limit = 10,
   }) async {
     /// department → action mapping
-    final departmentId = await LocalDb.getDepartmentId();
+    final stageId = await LocalDb.getStageId();
 
-    final action = departmentId == '1'
+    final action = stageId == '1'
         ? 'first_stage'
-        : departmentId == '2'
+        : stageId == '2'
         ? 'second_stage'
-        : 'third_stage';
+        : null;
 
     final response = await dio.get(
       'staff/list-assigned',
@@ -50,13 +50,13 @@ class ReportRepo extends Repository {
     int limit = 10,
     String? orderBy,
   }) async {
-    final departmentId = await LocalDb.getDepartmentId();
+    final stageId = await LocalDb.getStageId();
 
-    final action = departmentId == '1'
+    final action = stageId == '1'
         ? 'first_stage'
-        : departmentId == '2'
+        : stageId == '2'
         ? 'second_stage'
-        : 'third_stage';
+        : null;
 
     final response = await dio.get(
       "staff/list-received",
@@ -90,12 +90,12 @@ class ReportRepo extends Repository {
     int limit = 10,
     String orderBy = "asc",
   }) async {
-    final departmentId = await LocalDb.getDepartmentId();
-    final action = departmentId == '1'
+    final stageId = await LocalDb.getStageId();
+    final action = stageId == '1'
         ? 'first_stage'
-        : departmentId == '2'
+        : stageId == '2'
         ? 'second_stage'
-        : 'third_stage';
+        : null;
 
     final response = await dio.get(
       "staff/pending-to-received",

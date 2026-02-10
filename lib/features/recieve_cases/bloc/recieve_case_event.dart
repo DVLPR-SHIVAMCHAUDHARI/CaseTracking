@@ -21,3 +21,12 @@ class ReceiveCasesEvent extends ReceiveEvent {
   @override
   List<Object?> get props => [date, time, barcodes];
 }
+
+class ReceiveAllCasesEvent extends ReceiveEvent {
+  final int assignedId;
+
+  const ReceiveAllCasesEvent({required this.assignedId});
+
+  @override
+  List<Object?> get props => [assignedId];
+}

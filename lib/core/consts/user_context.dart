@@ -1,15 +1,15 @@
 class UserContext {
   final String roleId;
-  final String departmentId;
+  final String stageId;
 
-  UserContext({required this.roleId, required this.departmentId});
+  UserContext({required this.roleId, required this.stageId});
 
   /// ROLE
   bool get isAdmin => roleId == "2";
   bool get isStaff => roleId == "3";
 
   /// STAGES (ONLY FOR STAFF)
-  bool get isStage1 => departmentId == "1";
-  bool get isStage2 => departmentId == "2";
-  bool get isStage3 => departmentId == "3";
+  bool get isStage1 => stageId == "1";
+  bool get isStage2 => stageId == "2";
+  bool get isStage3 => stageId == "3";
 }

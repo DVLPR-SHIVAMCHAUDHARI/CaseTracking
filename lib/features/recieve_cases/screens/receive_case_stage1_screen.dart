@@ -48,7 +48,7 @@ class _ReceiveStage1ScreenState extends State<ReceiveStage1Screen> {
     if (code.isEmpty) return;
 
     if (!expectedCases.contains(code)) {
-      _showError("Invalid barcode");
+      _showError("Selected Barcode is not assigned to you");
       barcodeController.clear();
       return;
     }

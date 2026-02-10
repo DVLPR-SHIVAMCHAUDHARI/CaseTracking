@@ -25,6 +25,8 @@ import 'package:casetracking/features/recieve_pending_barcode/bloc/receieve_pend
 import 'package:casetracking/features/recieve_pending_barcode/bloc/receieve_pending_event.dart';
 import 'package:casetracking/features/reports/bloc/report_bloc.dart';
 import 'package:casetracking/features/reports/bloc/report_event.dart';
+import 'package:casetracking/features/reports/models/pendin_report_model.dart';
+import 'package:casetracking/features/reports/screens/pending_detail_report_screen.dart';
 
 import 'package:casetracking/features/reports/screens/pending_report.dart';
 import 'package:casetracking/features/reports/screens/assigned_report.dart';
@@ -35,6 +37,7 @@ import 'package:casetracking/features/userList/bloc/user_list_bloc.dart';
 import 'package:casetracking/features/userList/bloc/user_list_event.dart';
 import 'package:casetracking/features/userList/repository/user_list_repo.dart';
 import 'package:casetracking/features/userList/screens/user_list_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -57,6 +60,7 @@ enum Routes {
   updateuser,
   updatePassword,
   userlist,
+  pendingreportDetail,
 }
 
 GoRouter router = GoRouter(
@@ -173,27 +177,26 @@ GoRouter router = GoRouter(
       },
     ),
 
-    GoRoute(
-      path: "/assign3",
-      name: Routes.assign3.name,
-      builder: (context, state) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => AssignCaseBloc(AssignCaseRepository())),
-            BlocProvider(
-              create: (_) =>
-                  DepartmentBloc(MasterRepo())..add(const FetchDepartments()),
-            ),
-            BlocProvider(
-              create: (_) =>
-                  BoxSizeBloc(MasterRepo())..add(const FetchBoxSizes()),
-            ),
-          ],
-          child: const AssignStage3Screen(),
-        );
-      },
-    ),
-
+    // GoRoute(
+    //   path: "/assign3",
+    //   name: Routes.assign3.name,
+    //   builder: (context, state) {
+    //     return MultiBlocProvider(
+    //       providers: [
+    //         BlocProvider(create: (_) => AssignCaseBloc(AssignCaseRepository())),
+    //         BlocProvider(
+    //           create: (_) =>
+    //               DepartmentBloc(MasterRepo())..add(const FetchDepartments()),
+    //         ),
+    //         BlocProvider(
+    //           create: (_) =>
+    //               BoxSizeBloc(MasterRepo())..add(const FetchBoxSizes()),
+    //         ),
+    //       ],
+    //       child: const AssignStage3Screen(),
+    //     );
+    //   },
+    // ),
     GoRoute(
       path: "/assignadmin",
       builder: (context, state) => AssignAdminScreen(),
@@ -212,6 +215,7 @@ GoRouter router = GoRouter(
             ),
 
             BlocProvider(create: (_) => ReceiveBloc()),
+            BlocProvider(create: (_) => BoxSizeBloc(MasterRepo())),
           ],
           child: const ReceiveStage2Screen(),
         );
@@ -235,23 +239,41 @@ GoRouter router = GoRouter(
       },
     ),
     GoRoute(
-      path: "/receive3",
-      name: Routes.receive3.name,
+      path: "/pending-to-received-detail",
+      name: Routes.pendingreportDetail.name,
       builder: (context, state) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(
-              create: (_) =>
-                  PendingBarcodeBloc()..add(const FetchPendingBarcodes()),
-            ),
+        final extra = state.extra;
 
-            BlocProvider(create: (_) => ReceiveBloc()),
-          ],
-          child: const ReceiveStage3Screen(),
+        if (extra is! PendingToReceivedBatch) {
+          return const Scaffold(
+            body: Center(child: Text("Invalid batch data")),
+          );
+        }
+
+        return MultiBlocProvider(
+          providers: [BlocProvider(create: (_) => ReceiveBloc())],
+          child: PendingToReceivedDetailScreen(batch: extra),
         );
       },
     ),
 
+    // GoRoute(
+    //   path: "/receive3",
+    //   name: Routes.receive3.name,
+    //   builder: (context, state) {
+    //     return MultiBlocProvider(
+    //       providers: [
+    //         BlocProvider(
+    //           create: (_) =>
+    //               PendingBarcodeBloc()..add(const FetchPendingBarcodes()),
+    //         ),
+
+    //         BlocProvider(create: (_) => ReceiveBloc()),
+    //       ],
+    //       child: const ReceiveStage3Screen(),
+    //     );
+    //   },
+    // ),
     GoRoute(
       path: "/receiveAdmin",
       builder: (context, state) => ReceiveCaseScreenAdmin(),

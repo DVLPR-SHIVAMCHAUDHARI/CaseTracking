@@ -8,36 +8,35 @@ class AuthRepo extends Repository {
     required String username,
     required String password,
   }) async {
-    try {
-      final response = await dio.post(
-        "user/login",
-        data: {"email": username, "password": password},
-      );
+    final response = await dio.post(
+      "user/login",
+      data: {"email": username, "password": password},
+    );
 
-      final responseBody = response.data["Response"];
-      final status = responseBody["Status"];
-      final statusCode = status["StatusCode"];
-      final message = status["DisplayText"];
+    final responseBody = response.data["Response"];
+    final status = responseBody["Status"];
 
-      if (statusCode != "0") {
-        return message;
-      }
+    final statusCode = status["StatusCode"];
+    final message = status["DisplayText"];
 
-      final data = responseBody["ResponseData"];
-
-      await TokenServices().storeTokens(accessToken: data["x_auth_token"]);
-
-      await LocalDb.saveUser(
-        userId: data["user_id"].toString(),
-        username: data["fullname"],
-        departmentId: data["department_id"].toString(),
-        roleId: data["role_id"].toString(),
-      );
-
-      return message;
-    } catch (e) {
-      return e.toString();
+    if (statusCode != "0") {
+      throw Exception(message);
     }
+
+    final data = responseBody["ResponseData"];
+
+    await TokenServices().storeTokens(accessToken: data["x_auth_token"]);
+
+    await LocalDb.saveUser(
+      departmentName: data["department_name"].toString(),
+      stageId: data["stage_id"].toString(),
+      userId: data["user_id"].toString(),
+      username: data["fullname"],
+      departmentId: data["department_id"].toString(),
+      roleId: data["role_id"].toString(),
+    );
+
+    return message;
   }
 
   Future<String> updateUser({

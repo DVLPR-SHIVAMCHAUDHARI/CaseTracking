@@ -1,4 +1,5 @@
 import 'package:casetracking/core/consts/appcolors.dart';
+import 'package:casetracking/core/routes/routes.dart';
 import 'package:casetracking/features/master_api/box_size/bloc/box_size_bloc.dart';
 import 'package:casetracking/features/master_api/box_size/bloc/box_size_state.dart';
 import 'package:casetracking/features/master_api/models/box_size_model.dart';
@@ -7,15 +8,12 @@ import 'package:casetracking/features/reports/bloc/report_event.dart';
 import 'package:casetracking/features/reports/bloc/report_state.dart';
 import 'package:casetracking/features/reports/models/pendin_report_model.dart';
 import 'package:casetracking/features/reports/screens/pending_detail_report_screen.dart';
-
-import 'package:casetracking/features/reports/widgets/assign_report_tile.dart';
 import 'package:casetracking/features/reports/widgets/pending_report_tile.dart';
-import 'package:casetracking/features/reports/widgets/search_bar.dart';
 import 'package:casetracking/widgets/appdropdown.dart';
-import 'package:casetracking/widgets/date_formatter.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 class PendingReport extends StatefulWidget {
   const PendingReport({super.key});
@@ -128,14 +126,18 @@ class _PendingReportState extends State<PendingReport> {
                           state.reports[index],
                         );
                         return PendingToReceivedBatchTile(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    PendingToReceivedDetailScreen(batch: batch),
-                              ),
+                          onTap: () async {
+                            final result = await context.pushNamed(
+                              Routes.pendingreportDetail.name,
+                              extra: batch,
                             );
+
+                            if (result == true) {
+                              // ignore: use_build_context_synchronously
+                              context.read<ReportBloc>().add(
+                                PendingToReceivedFetch(),
+                              );
+                            }
                           },
                           batch: batch,
                         );

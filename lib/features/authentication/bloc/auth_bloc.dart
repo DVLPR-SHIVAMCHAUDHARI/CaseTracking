@@ -13,18 +13,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<UpdatePasswordEvent>(_onUpdatePassword);
   }
 
-  _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
+  Future<void> _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
     emit(LoginLoadingState());
+
     try {
       final authRepo = AuthRepo();
-      final result = await authRepo.login(
+
+      final message = await authRepo.login(
         username: event.username,
         password: event.password,
       );
 
-      emit(LoginSuccessState(message: result));
+      emit(LoginSuccessState(message: message));
     } catch (e) {
-      emit(LoginFailureState(error: e.toString()));
+      emit(
+        LoginFailureState(error: e.toString().replaceAll("Exception: ", "")),
+      );
     }
   }
 
@@ -32,7 +36,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final tokenService = TokenServices();
     await tokenService.clear();
     await LocalDb.clear();
-    emit(LogoutState());
+    if (tokenService.loadToken() != null) {
+      emit(LogoutFailureState());
+    }
+    emit(LogoutSuccessState());
   }
 
   /// ✅ UPDATE USER

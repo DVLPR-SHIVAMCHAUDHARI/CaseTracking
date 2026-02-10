@@ -1,4 +1,3 @@
-
 class UserModel {
   int? id;
   String? email;
@@ -13,45 +12,64 @@ class UserModel {
   int? isVerified;
   int? departmentId;
   String? departmentName;
+  int? stageId;
 
-  UserModel({this.id, this.email, this.roleId, this.fullname, this.roleName, this.createdAt, this.createdBy, this.isDeleted, this.updatedAt, this.updatedBy, this.isVerified, this.departmentId, this.departmentName});
+  UserModel({
+    this.id,
+    this.stageId,
+    this.email,
+    this.roleId,
+    this.fullname,
+    this.roleName,
+    this.createdAt,
+    this.createdBy,
+    this.isDeleted,
+    this.updatedAt,
+    this.updatedBy,
+    this.isVerified,
+    this.departmentId,
+    this.departmentName,
+  });
 
   UserModel.fromJson(Map<String, dynamic> json) {
-    if(json["id"] is int) {
+    if (json["id"] is int) {
       id = json["id"];
     }
-    if(json["email"] is String) {
+    if (json["stage_id"] is int) {
+      stageId = json["stage_id"];
+    }
+    if (json["email"] is String) {
       email = json["email"];
     }
-    if(json["role_id"] is String) {
+    if (json["role_id"] is String) {
       roleId = json["role_id"];
     }
-    if(json["fullname"] is String) {
+    if (json["fullname"] is String) {
       fullname = json["fullname"];
     }
-    if(json["role_name"] is String) {
+    if (json["role_name"] is String) {
       roleName = json["role_name"];
     }
-    if(json["created_at"] is String) {
+    if (json["created_at"] is String) {
       createdAt = json["created_at"];
     }
-    if(json["created_by"] is String) {
+    if (json["created_by"] is String) {
       createdBy = json["created_by"];
     }
-    if(json["is_deleted"] is int) {
+    if (json["is_deleted"] is int) {
       isDeleted = json["is_deleted"];
     }
-    if(json["updated_at"] is String) {
+    if (json["updated_at"] is String) {
       updatedAt = json["updated_at"];
     }
     updatedBy = json["updated_by"];
-    if(json["is_verified"] is int) {
+    if (json["is_verified"] is int) {
       isVerified = json["is_verified"];
     }
-    if(json["department_id"] is int) {
+    if (json["department_id"] is int) {
       departmentId = json["department_id"];
     }
-    if(json["department_name"] is String) {
+    if (json["department_name"] is String) {
       departmentName = json["department_name"];
     }
   }
@@ -63,6 +81,7 @@ class UserModel {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> _data = <String, dynamic>{};
     _data["id"] = id;
+    _data["stage_id"] = stageId;
     _data["email"] = email;
     _data["role_id"] = roleId;
     _data["fullname"] = fullname;

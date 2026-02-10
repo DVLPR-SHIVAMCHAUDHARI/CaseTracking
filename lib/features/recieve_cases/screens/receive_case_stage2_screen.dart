@@ -1,5 +1,6 @@
 import 'package:casetracking/core/consts/appcolors.dart';
 import 'package:casetracking/core/consts/snack_bar.dart';
+import 'package:casetracking/core/services/local_db.dart';
 import 'package:casetracking/features/assign_cases/widgets/barcode_scanner.dart';
 import 'package:casetracking/features/recieve_cases/bloc/recieve_case_bloc.dart';
 import 'package:casetracking/features/recieve_cases/bloc/recieve_case_event.dart';
@@ -7,10 +8,14 @@ import 'package:casetracking/features/recieve_cases/bloc/recieve_case_state.dart
 import 'package:casetracking/features/recieve_pending_barcode/bloc/receieve_pending_bloc.dart';
 import 'package:casetracking/features/recieve_pending_barcode/bloc/receieve_pending_event.dart';
 import 'package:casetracking/features/recieve_pending_barcode/bloc/receieve_pending_state.dart';
+import 'package:casetracking/features/reports/bloc/report_bloc.dart';
+import 'package:casetracking/features/reports/bloc/report_event.dart';
+import 'package:casetracking/features/reports/screens/pending_report.dart';
 import 'package:casetracking/widgets/apptextfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 
 class ReceiveStage2Screen extends StatefulWidget {
@@ -27,20 +32,25 @@ class _ReceiveStage2ScreenState extends State<ReceiveStage2Screen> {
   final TextEditingController barcodeController = TextEditingController();
 
   /// Fixed as per requirement
-  final TextEditingController receivedFromController = TextEditingController(
-    text: "Renuka Warehouse",
-  );
 
-  final TextEditingController locationController = TextEditingController(
-    text: "Faridabad Warehouse",
-  );
+  final TextEditingController locationController = TextEditingController();
 
   late DateTime receivedDateTime;
+  String _departmentName = '';
+  bool manualRecieving = true;
 
   @override
   void initState() {
     super.initState();
     receivedDateTime = DateTime.now();
+    _loadLocation();
+  }
+
+  Future<void> _loadLocation() async {
+    final name = await LocalDb.getDepartmentName();
+    if (!mounted) return;
+    locationController.text = name ?? "-";
+    _departmentName = name ?? "";
   }
 
   bool isPending(String code) {
@@ -152,179 +162,283 @@ class _ReceiveStage2ScreenState extends State<ReceiveStage2Screen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Receive Cases (Stage 2)'),
+        title: Text(
+          _departmentName.isEmpty
+              ? 'Receive Cases'
+              : 'Receive Cases ($_departmentName)',
+        ),
         centerTitle: true,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
-      body: BlocListener<PendingBarcodeBloc, PendingBarcodeState>(
-        listener: (context, state) {
-          if (state is PendingBarcodeLoaded) {
-            setState(() {
-              expectedCases.clear();
-              expectedCases.addAll(state.barcodes);
-            });
-          }
 
-          if (state is PendingBarcodeError) {
-            snackbar(context, message: state.message, color: AppColors.error);
-          }
-        },
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            child: BlocListener<ReceiveBloc, ReceiveState>(
-              listener: (context, state) {
-                if (state is ReceiveSuccess) {
-                  showCenterNotification(context, message: state.message);
-
-                  setState(() {
-                    receivedCases.clear();
-                    barcodeController.clear();
-                  });
-
-                  // refresh pending list
-                  context.read<PendingBarcodeBloc>().add(
-                    const FetchPendingBarcodes(),
-                  );
-                }
-
-                if (state is ReceiveFailure) {
-                  snackbar(
-                    context,
-                    message: state.error,
-                    color: AppColors.error,
-                  );
-                }
-              },
-              child: Column(
-                children: [
-                  /// META CARD
-                  _CardContainer(
-                    child: Column(
-                      children: [
-                        AppTextField(
-                          title: "Location",
-                          controller: locationController,
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _InfoTile(
-                                label: "Date",
-                                value: DateFormat(
-                                  'dd MMM yyyy',
-                                ).format(receivedDateTime),
-                                onTap: pickDate,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _InfoTile(
-                                label: "Time",
-                                value: DateFormat(
-                                  'hh:mm a',
-                                ).format(receivedDateTime),
-                                onTap: pickTime,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  /// CASES CARD
-                  _CardContainer(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _SectionTitle(
-                          'Received Cases (${receivedCases.length})',
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: AppTextField(
-                                controller: barcodeController,
-                                title: "Enter Barcode",
-                                hint: "ABC-123",
-                                onChanged: (_) => setState(() {}),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              height: 50.h,
-                              width: 50.w,
-                              child: IconButton.filled(
-                                style: IconButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                onPressed: hasText
-                                    ? addCaseFromField
-                                    : scanCase,
-                                icon: Icon(
-                                  hasText
-                                      ? Icons.arrow_forward_ios
-                                      : Icons.qr_code_scanner,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: receivedCases.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (_, index) => _caseTile(index),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  /// SUBMIT
-                  BlocBuilder<ReceiveBloc, ReceiveState>(
-                    builder: (context, state) {
-                      if (state is ReceiveLoading) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      return SizedBox(
-                        width: double.infinity,
-                        height: 54.h,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                          ),
-                          onPressed: receivedCases.isNotEmpty
-                              ? receiveCases
-                              : null,
-                          child: const Text(
-                            'Receive Cases',
-                            style: TextStyle(color: Colors.white, fontSize: 16),
-                          ),
-                        ),
-                      );
+      body: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        manualRecieving = true;
+                      });
                     },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: manualRecieving
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        "Receive Manually",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: manualRecieving
+                              ? Colors.white
+                              : Colors.black87,
+                        ),
+                      ),
+                    ),
                   ),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        manualRecieving = false;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: !manualRecieving
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        "Receive Automatically",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: !manualRecieving
+                              ? Colors.white
+                              : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
+          Expanded(
+            child: manualRecieving
+                ? BlocListener<PendingBarcodeBloc, PendingBarcodeState>(
+                    listener: (context, state) {
+                      if (state is PendingBarcodeLoaded) {
+                        setState(() {
+                          expectedCases.clear();
+                          expectedCases.addAll(state.barcodes);
+                        });
+                      }
+
+                      if (state is PendingBarcodeError) {
+                        snackbar(
+                          context,
+                          message: state.message,
+                          color: AppColors.error,
+                        );
+                      }
+                    },
+                    child: SafeArea(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        child: BlocListener<ReceiveBloc, ReceiveState>(
+                          listener: (context, state) {
+                            if (state is ReceiveSuccess) {
+                              showCenterNotification(
+                                context,
+                                message: state.message,
+                              );
+
+                              setState(() {
+                                receivedCases.clear();
+                                barcodeController.clear();
+                              });
+
+                              // refresh pending list
+                              context.read<PendingBarcodeBloc>().add(
+                                const FetchPendingBarcodes(),
+                              );
+                            }
+
+                            if (state is ReceiveFailure) {
+                              snackbar(
+                                context,
+                                message: state.error,
+                                color: AppColors.error,
+                              );
+                            }
+                          },
+                          child: Column(
+                            children: [
+                              /// META CARD
+                              _CardContainer(
+                                child: Column(
+                                  children: [
+                                    AppTextField(
+                                      title: "Location",
+                                      controller: locationController,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _InfoTile(
+                                            label: "Date",
+                                            value: DateFormat(
+                                              'dd MMM yyyy',
+                                            ).format(receivedDateTime),
+                                            onTap: pickDate,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: _InfoTile(
+                                            label: "Time",
+                                            value: DateFormat(
+                                              'hh:mm a',
+                                            ).format(receivedDateTime),
+                                            onTap: pickTime,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              /// CASES CARD
+                              _CardContainer(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _SectionTitle(
+                                      'Received Cases (${receivedCases.length})',
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Expanded(
+                                          child: AppTextField(
+                                            controller: barcodeController,
+                                            title: "Enter Barcode",
+                                            hint: "ABC-123",
+                                            onChanged: (_) => setState(() {}),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          height: 50.h,
+                                          width: 50.w,
+                                          child: IconButton.filled(
+                                            style: IconButton.styleFrom(
+                                              backgroundColor:
+                                                  AppColors.primary,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: hasText
+                                                ? addCaseFromField
+                                                : scanCase,
+                                            icon: Icon(
+                                              hasText
+                                                  ? Icons.arrow_forward_ios
+                                                  : Icons.qr_code_scanner,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ListView.separated(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount: receivedCases.length,
+                                      separatorBuilder: (_, __) =>
+                                          const Divider(height: 1),
+                                      itemBuilder: (_, index) =>
+                                          _caseTile(index),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              /// SUBMIT
+                              BlocBuilder<ReceiveBloc, ReceiveState>(
+                                builder: (context, state) {
+                                  if (state is ReceiveLoading) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+                                  return SizedBox(
+                                    width: double.infinity,
+                                    height: 54.h,
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                      ),
+                                      onPressed: receivedCases.isNotEmpty
+                                          ? receiveCases
+                                          : null,
+                                      child: const Text(
+                                        'Receive Cases',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : BlocProvider(
+                    create: (_) => ReportBloc()..add(PendingToReceivedFetch()),
+                    child: const PendingReport(),
+                  ),
+          ),
+        ],
       ),
     );
   }

@@ -28,3 +28,21 @@ class ReceiveFailure extends ReceiveState {
   @override
   List<Object?> get props => [error];
 }
+
+class ReceiveAllCasesLoading extends ReceiveState {}
+
+class ReceiveAllCasesLoaded extends ReceiveState {
+  String message;
+
+  ReceiveAllCasesLoaded(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+class ReceiveAllCasesFailure extends ReceiveState {
+  String error;
+
+  ReceiveAllCasesFailure(this.error);
+  @override
+  List<Object?> get props => [error];
+}

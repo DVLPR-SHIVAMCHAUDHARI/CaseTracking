@@ -33,6 +33,20 @@ class _ReceivedReportState extends State<ReceivedReport> {
   BoxSizeModel? _filterBoxSize;
   String? _sortBy; // e.g. "date", "created_at"
   String _orderBy = "asc";
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReportBloc>().add(
+        ReceivedReportFetch(
+          fromDate: AppDateFormatter.toApi(fromDate),
+          toDate: AppDateFormatter.toApi(toDate),
+          boxSizeId: _selectedBoxSize?.id,
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -133,6 +133,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         /// SUBMIT
                         BlocListener<AuthBloc, AuthState>(
+                          listenWhen: (previous, current) =>
+                              current is LoginSuccessState ||
+                              current is LoginFailureState,
                           listener: (context, state) {
                             if (state is LoginFailureState) {
                               snackbar(

@@ -1,3 +1,4 @@
+import 'package:casetracking/core/consts/globals.dart';
 import 'package:casetracking/core/routes/routes.dart';
 import 'package:casetracking/core/services/local_db.dart';
 import 'package:casetracking/core/services/token_service.dart';
@@ -6,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-void main() {
+void main() async {
   runApp(CaseTracking());
   WidgetsFlutterBinding.ensureInitialized();
 
-  TokenServices().loadToken();
+  token.loadToken();
 }
 
 class CaseTracking extends StatelessWidget {

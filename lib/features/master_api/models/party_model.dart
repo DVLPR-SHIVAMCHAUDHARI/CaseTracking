@@ -22,7 +22,7 @@ class PartyModel {
       id: json['id'],
       name: json['name'],
       companyAddress: json['company_address'],
-      boxLocation: int.parse(json['box_location'].toString()),
+      boxLocation: int.parse(json['department_location'].toString()),
       isDeleted: json['is_deleted'] == 1,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),

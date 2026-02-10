@@ -1,5 +1,6 @@
 import 'package:casetracking/core/consts/appcolors.dart';
 import 'package:casetracking/core/consts/snack_bar.dart';
+import 'package:casetracking/core/services/local_db.dart';
 import 'package:casetracking/features/assign_cases/bloc/assign_case_bloc.dart';
 import 'package:casetracking/features/assign_cases/bloc/assign_case_event.dart';
 import 'package:casetracking/features/assign_cases/bloc/assign_case_state.dart';
@@ -30,9 +31,8 @@ class AssignStage2Screen extends StatefulWidget {
 
 class _AssignStage2ScreenState extends State<AssignStage2Screen> {
   List<String> errorBarcodes = [];
-
   PartyModel? _selectedCompany;
-  DepartmentModel? _selectedLocation;
+  int? currentDepartmentId;
   BoxSizeModel? _selectedSize;
   final List<String> scannedCases = [];
   final TextEditingController barcodeController = TextEditingController();
@@ -45,6 +45,17 @@ class _AssignStage2ScreenState extends State<AssignStage2Screen> {
   void initState() {
     super.initState();
     assignedDateTime = DateTime.now();
+    _loadDepartmentId();
+  }
+
+  Future<void> _loadDepartmentId() async {
+    final rawDeptId = await LocalDb.getDepartmentId();
+
+    debugPrint("RAW departmentId from DB -> '$rawDeptId'");
+
+    setState(() {
+      currentDepartmentId = int.tryParse(rawDeptId?.trim() ?? '');
+    });
   }
 
   void addCaseFromField() {
@@ -111,17 +122,17 @@ class _AssignStage2ScreenState extends State<AssignStage2Screen> {
   }
 
   void assignCases() {
-    if (_selectedCompany == null || scannedCases.isEmpty) return;
-
-    final date = DateFormat('yyyy-MM-dd').format(assignedDateTime);
-    final time = DateFormat('HH:mm').format(assignedDateTime);
+    if (_selectedCompany == null ||
+        _selectedSize == null ||
+        scannedCases.isEmpty)
+      return;
 
     context.read<AssignCaseBloc>().add(
       AssignCasesStage2Event(
-        locationId: _selectedLocation!.id,
+        locationId: currentDepartmentId!,
         partyId: _selectedCompany!.id,
         boxSizeId: _selectedSize!.id,
-        barcodes: scannedCases,
+        barcodes: List.from(scannedCases),
         date: DateFormat('yyyy-MM-dd').format(assignedDateTime),
         time: DateFormat('HH:mm').format(assignedDateTime),
       ),
@@ -131,7 +142,9 @@ class _AssignStage2ScreenState extends State<AssignStage2Screen> {
   @override
   void dispose() {
     barcodeController.dispose();
+    currentDepartmentId = null;
     locationController.dispose();
+
     super.dispose();
   }
 
@@ -207,19 +220,29 @@ class _AssignStage2ScreenState extends State<AssignStage2Screen> {
                       BlocBuilder<DepartmentBloc, DepartmentState>(
                         builder: (context, state) {
                           if (state is DepartmentLoading) {
-                            return AppDropdownShimmer(title: "Select location");
+                            return AppDropdownShimmer(
+                              title: "Current Location",
+                            );
                           }
 
                           if (state is DepartmentLoaded) {
-                            return AppDropdown<DepartmentModel>(
-                              title: "Select Location",
-                              hint: "Choose Location",
-                              items: state.departments,
-                              value: _selectedLocation,
-                              itemLabel: (d) => d.name,
-                              onChanged: (value) {
-                                setState(() => _selectedLocation = value);
-                              },
+                            final currentDept = state.departments.firstWhere(
+                              (d) => d.id == currentDepartmentId,
+                              orElse: () => state.departments.first,
+                            );
+
+                            return AbsorbPointer(
+                              child: Opacity(
+                                opacity: 1,
+                                child: AppDropdown<DepartmentModel>(
+                                  title: "Current Location ",
+                                  hint: "Current Location",
+                                  items: state.departments,
+                                  value: currentDept, // ✅ always from SAME list
+                                  itemLabel: (d) => d.name,
+                                  onChanged: (_) {},
+                                ),
+                              ),
                             );
                           }
 
@@ -343,9 +366,13 @@ class _AssignStage2ScreenState extends State<AssignStage2Screen> {
                       backgroundColor: AppColors.primary,
                     ),
                     onPressed:
-                        _selectedCompany != null && scannedCases.isNotEmpty
+                        _selectedCompany != null &&
+                            _selectedSize != null &&
+                            currentDepartmentId != null &&
+                            scannedCases.isNotEmpty
                         ? assignCases
                         : null,
+
                     child: const Text(
                       'Assign Cases',
                       style: TextStyle(color: Colors.white, fontSize: 16),

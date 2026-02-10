@@ -9,6 +9,7 @@ class ReceiveBloc extends Bloc<ReceiveEvent, ReceiveState> {
 
   ReceiveBloc() : super(ReceiveInitial()) {
     on<ReceiveCasesEvent>(_onReceiveCases);
+    on<ReceiveAllCasesEvent>(_onReceiveAllCases);
   }
 
   Future<void> _onReceiveCases(
@@ -17,10 +18,10 @@ class ReceiveBloc extends Bloc<ReceiveEvent, ReceiveState> {
   ) async {
     emit(ReceiveLoading());
     try {
-      final departmentId = await LocalDb.getDepartmentId();
+      final stageId = await LocalDb.getStageId();
 
       final message = await repo.receiveCases(
-        departmentId: departmentId!,
+        stageId: stageId!,
         date: event.date,
         time: event.time,
         barcodes: event.barcodes,
@@ -29,6 +30,19 @@ class ReceiveBloc extends Bloc<ReceiveEvent, ReceiveState> {
       emit(ReceiveSuccess(message));
     } catch (e) {
       emit(ReceiveFailure(e.toString()));
+    }
+  }
+
+  _onReceiveAllCases(
+    ReceiveAllCasesEvent event,
+    Emitter<ReceiveState> emit,
+  ) async {
+    emit(ReceiveAllCasesLoading());
+    try {
+      final message = await repo.receiveAllCases(assignedId: event.assignedId);
+      emit(ReceiveAllCasesLoaded(message));
+    } catch (e) {
+      emit(ReceiveAllCasesFailure(e.toString()));
     }
   }
 }

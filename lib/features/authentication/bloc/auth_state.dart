@@ -26,7 +26,12 @@ class LoginFailureState extends AuthState {
   List<Object?> get props => [error];
 }
 
-class LogoutState extends AuthState {
+class LogoutFailureState extends AuthState {
+  @override
+  List<Object?> get props => [];
+}
+
+class LogoutSuccessState extends AuthState {
   @override
   List<Object?> get props => [];
 }

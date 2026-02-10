@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:casetracking/core/consts/appcolors.dart';
+import 'package:casetracking/core/consts/globals.dart';
 import 'package:casetracking/core/consts/snack_bar.dart';
 import 'package:casetracking/core/services/local_db.dart';
 import 'package:casetracking/features/assign_cases/bloc/assign_case_bloc.dart';
@@ -30,7 +33,9 @@ class AssignStage1Screen extends StatefulWidget {
 
 late DateTime assignedDateTime;
 
-DepartmentModel? _selectedDepartment;
+DepartmentModel? _selectedDepartment; // Send To
+String? currentDepartmentId;
+
 BoxSizeModel? _selectedBoxSize;
 
 class _AssignStage1ScreenState extends State<AssignStage1Screen> {
@@ -45,6 +50,12 @@ class _AssignStage1ScreenState extends State<AssignStage1Screen> {
   void initState() {
     super.initState();
     dateTime = DateTime.now();
+    localLoad();
+  }
+
+  localLoad() async {
+    currentDepartmentId = await LocalDb.getDepartmentId();
+    logger.e(currentDepartmentId);
   }
 
   @override
@@ -114,11 +125,39 @@ class _AssignStage1ScreenState extends State<AssignStage1Screen> {
                     ),
 
                     const SizedBox(height: 12),
-                    AppTextField(
-                      title: "Current Location",
-                      readOnly: true,
-                      hint: "Renuka Logistics Warehouse",
+
+                    BlocBuilder<DepartmentBloc, DepartmentState>(
+                      builder: (context, state) {
+                        if (state is DepartmentLoading) {
+                          return AppDropdownShimmer(title: "Current Location");
+                        }
+
+                        if (state is DepartmentLoaded) {
+                          final currentDept = state.departments.firstWhere(
+                            (d) =>
+                                d.id == int.tryParse(currentDepartmentId ?? ""),
+                            orElse: () => state.departments.first,
+                          );
+
+                          return AbsorbPointer(
+                            child: Opacity(
+                              opacity: 1,
+                              child: AppDropdown<DepartmentModel>(
+                                title: "Current Location ",
+                                hint: "Current Location",
+                                items: state.departments,
+                                value: currentDept,
+                                itemLabel: (d) => d.name,
+                                onChanged: (_) {},
+                              ),
+                            ),
+                          );
+                        }
+
+                        return const SizedBox.shrink();
+                      },
                     ),
+
                     const SizedBox(height: 12),
 
                     BlocBuilder<BoxSizeBloc, BoxSizeState>(
@@ -181,6 +220,7 @@ class _AssignStage1ScreenState extends State<AssignStage1Screen> {
               ),
               const SizedBox(height: 24),
               _submitBtn("Assign Cases"),
+              const SizedBox(height: 24),
             ],
           ),
         ),

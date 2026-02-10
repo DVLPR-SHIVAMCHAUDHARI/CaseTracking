@@ -4,7 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 abstract class Repository {
-  final String host = "https://logistics.unimeshserver.in/Inventory/api/v1/";
+  final String host =
+      "https://logistics.unimeshserver.online/Inventory/api/v1/";
   late final Dio dio;
 
   Repository() {

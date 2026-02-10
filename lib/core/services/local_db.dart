@@ -4,6 +4,8 @@ class LocalDb {
   static const _keyUserId = "user_id";
   static const _keyUsername = "username";
   static const _keyDepartmentId = "department_id";
+  static const _keyDepartmentName = "department_name";
+  static const _keyStageId = "stage_id";
   static const _keyRoleId = "role_id";
 
   /// SAVE USER SESSION
@@ -11,13 +13,17 @@ class LocalDb {
     required String userId,
     required String username,
     required String departmentId,
+    required String departmentName,
     required String roleId,
+    required String stageId,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.setString(_keyUserId, userId);
     await prefs.setString(_keyUsername, username);
     await prefs.setString(_keyDepartmentId, departmentId);
+    await prefs.setString(_keyDepartmentName, departmentName);
+    await prefs.setString(_keyStageId, stageId);
     await prefs.setString(_keyRoleId, roleId);
   }
 
@@ -35,6 +41,16 @@ class LocalDb {
   static Future<String?> getDepartmentId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyDepartmentId);
+  }
+
+  static Future<String?> getDepartmentName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyDepartmentName);
+  }
+
+  static Future<String?> getStageId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyStageId);
   }
 
   static Future<String?> getRoleId() async {

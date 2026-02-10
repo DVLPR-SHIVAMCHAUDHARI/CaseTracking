@@ -3,14 +3,12 @@ import 'package:casetracking/core/services/repository.dart';
 
 class ReceievePendingRepo extends Repository {
   Future<List<String>> fetchPendingBarcodes() async {
-    final stage = await LocalDb.getDepartmentId();
+    final stage = await LocalDb.getStageId();
     final response = await dio.get(
       "staff/pending-barcode-received?action=${stage == '1'
           ? "first_stage"
           : stage == '2'
           ? "second_stage"
-          : stage == "3"
-          ? "third_stage"
           : ""}", // 🔁 replace with actual endpoint
     );
 
