@@ -55,7 +55,7 @@ class MasterRepo extends Repository {
 
     return list
         .map((e) => PartyModel.fromJson(e))
-        .where((e) => !e.isDeleted)
+        .where((e) => !e.isDeleted!)
         .toList();
   }
 }

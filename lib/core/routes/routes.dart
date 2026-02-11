@@ -16,6 +16,10 @@ import 'package:casetracking/features/master_api/department/bloc/department_even
 import 'package:casetracking/features/master_api/parties/bloc/parties_bloc.dart';
 import 'package:casetracking/features/master_api/parties/bloc/parties_event.dart';
 import 'package:casetracking/features/master_api/repositories/masterrepo.dart';
+import 'package:casetracking/features/partyWiseReport/bloc/party_wise_report_bloc.dart';
+import 'package:casetracking/features/partyWiseReport/bloc/party_wise_report_event.dart';
+import 'package:casetracking/features/partyWiseReport/repository/party_wise_repository.dart';
+import 'package:casetracking/features/partyWiseReport/screens/partywisereport_screen.dart';
 import 'package:casetracking/features/recieve_cases/bloc/recieve_case_bloc.dart';
 import 'package:casetracking/features/recieve_cases/screens/receive_case_stage1_screen.dart';
 import 'package:casetracking/features/recieve_cases/screens/receive_case_screen_admin.dart';
@@ -61,6 +65,7 @@ enum Routes {
   updatePassword,
   userlist,
   pendingreportDetail,
+  partywiseReport,
 }
 
 GoRouter router = GoRouter(
@@ -279,6 +284,28 @@ GoRouter router = GoRouter(
       builder: (context, state) => ReceiveCaseScreenAdmin(),
       name: Routes.receiveAdmin.name,
     ),
+    GoRoute(
+      path: "/partywiseReport",
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => PartyBloc(MasterRepo())..add(FetchParties()),
+          ),
+          BlocProvider(
+            create: (context) =>
+                BoxSizeBloc(MasterRepo())..add(FetchBoxSizes()),
+          ),
+          BlocProvider(
+            create: (context) =>
+                PartyWiseReportBloc(PartyWiseRepository())
+                  ..add(FetchPartyReport(offset: 1)),
+          ),
+        ],
+        child: const PartyWiseReport(),
+      ),
+      name: Routes.partywiseReport.name,
+    ),
+
     ShellRoute(
       builder: (context, state, child) {
         return ReportsHomescreen(child: child);

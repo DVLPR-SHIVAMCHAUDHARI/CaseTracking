@@ -118,6 +118,19 @@ class HomeScreen extends StatelessWidget {
                       : SizedBox.shrink(),
 
                   20.verticalSpace,
+                  isAdmin
+                      ? _ActionCard(
+                          icon: Icons.person_outlined,
+                          title: "Party wise Reports",
+                          subtitle: "Case Assignment Management",
+                          color: Colors.white,
+                          onTap: () {
+                            router.pushNamed(Routes.partywiseReport.name);
+                          },
+                        )
+                      : SizedBox.shrink(),
+
+                  20.verticalSpace,
 
                   const Spacer(),
 
