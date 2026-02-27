@@ -26,7 +26,7 @@ class CaseTracking extends StatelessWidget {
 
         child: MaterialApp.router(
           debugShowCheckedModeBanner: false,
-          color: Colors.white,
+          color: Colors.blueGrey,
           routerConfig: router,
         ),
       ),

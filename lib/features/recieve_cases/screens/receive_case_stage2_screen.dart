@@ -2,6 +2,9 @@ import 'package:casetracking/core/consts/appcolors.dart';
 import 'package:casetracking/core/consts/snack_bar.dart';
 import 'package:casetracking/core/services/local_db.dart';
 import 'package:casetracking/features/assign_cases/widgets/barcode_scanner.dart';
+import 'package:casetracking/features/master_api/box_size/bloc/box_size_bloc.dart';
+import 'package:casetracking/features/master_api/box_size/bloc/box_size_event.dart';
+import 'package:casetracking/features/master_api/repositories/masterrepo.dart';
 import 'package:casetracking/features/recieve_cases/bloc/recieve_case_bloc.dart';
 import 'package:casetracking/features/recieve_cases/bloc/recieve_case_event.dart';
 import 'package:casetracking/features/recieve_cases/bloc/recieve_case_state.dart';
@@ -11,11 +14,12 @@ import 'package:casetracking/features/recieve_pending_barcode/bloc/receieve_pend
 import 'package:casetracking/features/reports/bloc/report_bloc.dart';
 import 'package:casetracking/features/reports/bloc/report_event.dart';
 import 'package:casetracking/features/reports/screens/pending_report.dart';
+import 'package:casetracking/features/reports/screens/recieve_all_cases_screen.dart';
 import 'package:casetracking/widgets/apptextfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:hive/hive.dart';
+
 import 'package:intl/intl.dart';
 
 class ReceiveStage2Screen extends StatefulWidget {
@@ -433,9 +437,18 @@ class _ReceiveStage2ScreenState extends State<ReceiveStage2Screen> {
                       ),
                     ),
                   )
-                : BlocProvider(
-                    create: (_) => ReportBloc()..add(PendingToReceivedFetch()),
-                    child: const PendingReport(),
+                : MultiBlocProvider(
+                    providers: [
+                      BlocProvider(
+                        create: (_) =>
+                            ReportBloc()..add(PendingToReceivedFetch()),
+                      ),
+                      BlocProvider(
+                        create: (context) =>
+                            BoxSizeBloc(MasterRepo())..add(FetchBoxSizes()),
+                      ),
+                    ],
+                    child: const RecieveAllCases(),
                   ),
           ),
         ],

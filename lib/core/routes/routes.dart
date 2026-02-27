@@ -1,6 +1,8 @@
+import 'package:casetracking/features/add_boxes/bloc/add_box_bloc.dart';
+import 'package:casetracking/features/add_boxes/screens/add_box_screen.dart';
 import 'package:casetracking/features/assign_cases/bloc/assign_case_bloc.dart';
 import 'package:casetracking/features/assign_cases/repository/assign_case_repository.dart';
-import 'package:casetracking/features/assign_cases/screens/assign_screen_admin.dart';
+
 import 'package:casetracking/features/assign_cases/screens/assign_stage1_screen.dart';
 import 'package:casetracking/features/assign_cases/screens/assign_stage2_screen.dart';
 import 'package:casetracking/features/assign_cases/screens/assign_stage3_screen.dart';
@@ -35,6 +37,7 @@ import 'package:casetracking/features/reports/screens/pending_detail_report_scre
 import 'package:casetracking/features/reports/screens/pending_report.dart';
 import 'package:casetracking/features/reports/screens/assigned_report.dart';
 import 'package:casetracking/features/reports/screens/received_report.dart';
+import 'package:casetracking/features/reports/screens/recieve_all_cases_screen.dart';
 import 'package:casetracking/features/reports/screens/reports_homescreen.dart';
 import 'package:casetracking/features/splash/splashscreen.dart';
 import 'package:casetracking/features/userList/bloc/user_list_bloc.dart';
@@ -50,8 +53,9 @@ enum Routes {
   home,
   assign1,
   assign2,
-  assign3,
+  receiveall,
   assignAdmin,
+  addBox,
   receive1,
   receive2,
   receive3,
@@ -203,9 +207,21 @@ GoRouter router = GoRouter(
     //   },
     // ),
     GoRoute(
-      path: "/assignadmin",
-      builder: (context, state) => AssignAdminScreen(),
-      name: Routes.assignAdmin.name,
+      path: "/addBox",
+
+      name: Routes.addBox.name,
+
+      builder: (context, state) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) => BoxSizeBloc(MasterRepo())..add(FetchBoxSizes()),
+            ),
+            BlocProvider(create: (_) => AddBoxBloc()),
+          ],
+          child: AddBoxScreen(),
+        );
+      },
     ),
 
     GoRoute(
@@ -283,6 +299,24 @@ GoRouter router = GoRouter(
       path: "/receiveAdmin",
       builder: (context, state) => ReceiveCaseScreenAdmin(),
       name: Routes.receiveAdmin.name,
+    ),
+
+    GoRoute(
+      path: "/receiveall",
+      name: Routes.receiveall.name,
+      builder: (context, state) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) => ReportBloc()..add(PendingToReceivedFetch()),
+            ),
+            BlocProvider(
+              create: (_) => BoxSizeBloc(MasterRepo())..add(FetchBoxSizes()),
+            ),
+          ],
+          child: RecieveAllCases(),
+        );
+      },
     ),
     GoRoute(
       path: "/partywiseReport",

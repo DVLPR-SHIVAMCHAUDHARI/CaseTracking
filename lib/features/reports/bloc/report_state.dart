@@ -16,6 +16,8 @@ class AssignedReportLoaded extends ReportState {
   final bool hasMore;
 
   const AssignedReportLoaded({required this.reports, required this.hasMore});
+  @override
+  List<Object?> get props => [reports, hasMore];
 }
 
 class AssignedReportError extends ReportState {
@@ -34,6 +36,8 @@ class ReceivedReportLoaded extends ReportState {
   final bool hasMore;
 
   const ReceivedReportLoaded({required this.reports, required this.hasMore});
+  @override
+  List<Object?> get props => [reports, hasMore];
 }
 
 class ReceivedReportError extends ReportState {

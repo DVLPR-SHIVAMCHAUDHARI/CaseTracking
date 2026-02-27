@@ -52,92 +52,94 @@ class _PartyWiseReportState extends State<PartyWiseReport> {
         label: const Text("Filters", style: TextStyle(color: Colors.white)),
       ),
 
-      body: BlocBuilder<PartyWiseReportBloc, PartyWiseReportState>(
-        builder: (context, state) {
-          if (state is PartyWiseReportLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is PartyWiseReportError) {
-            return Center(
-              child: Text(
-                state.message,
-                style: const TextStyle(color: Colors.red),
-              ),
-            );
-          }
-
-          if (state is PartyWiseReportLoaded) {
-            if (state.list.isEmpty) {
-              return const Center(child: Text("No data found"));
+      body: SafeArea(
+        child: BlocBuilder<PartyWiseReportBloc, PartyWiseReportState>(
+          builder: (context, state) {
+            if (state is PartyWiseReportLoading) {
+              return const Center(child: CircularProgressIndicator());
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: state.list.length,
-              itemBuilder: (_, index) {
-                final item = state.list[index];
+            if (state is PartyWiseReportError) {
+              return Center(
+                child: Text(
+                  state.message,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              );
+            }
 
-                final created = DateTime.parse(item.createdAt!);
-                final days = DateTime.now().difference(created).inDays;
-                final isOverdue = days > 21;
+            if (state is PartyWiseReportLoaded) {
+              if (state.list.isEmpty) {
+                return const Center(child: Text("No data found"));
+              }
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: state.list.length,
+                itemBuilder: (_, index) {
+                  final item = state.list[index];
+
+                  final created = DateTime.parse(item.createdAt!);
+                  final days = DateTime.now().difference(created).inDays;
+                  final isOverdue = days > 21;
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      border: isOverdue
-                          ? Border.all(color: Colors.red, width: 1.5)
-                          : null,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "ID: ${item.id}",
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 12),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: isOverdue
+                            ? Border.all(color: Colors.red, width: 1.5)
+                            : null,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "ID: ${item.id}",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12),
 
-                        _infoRow("Barcode", item.barcode),
-                        _infoRow("Party", item.partyName),
-                        _infoRow("Case Size", item.boxSize),
-                        _infoRow("Assigned Date", item.createdAt),
-                        _infoRow("Assigned By", item.createdBy),
+                          _infoRow("Barcode", item.barcode),
+                          _infoRow("Party", item.partyName),
+                          _infoRow("Case Size", item.boxSize),
+                          _infoRow("Assigned Date", item.createdAt),
+                          _infoRow("Assigned By", item.createdBy),
 
-                        const SizedBox(height: 8),
+                          const SizedBox(height: 8),
 
-                        Row(
-                          children: [
-                            const Text(
-                              "Days Assigned: ",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            Text(
-                              days.toString(),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isOverdue ? Colors.red : Colors.green,
+                          Row(
+                            children: [
+                              const Text(
+                                "Days Assigned: ",
+                                style: TextStyle(fontWeight: FontWeight.w600),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              Text(
+                                days.toString(),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isOverdue ? Colors.red : Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            );
-          }
+                  );
+                },
+              );
+            }
 
-          return const SizedBox.shrink();
-        },
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }

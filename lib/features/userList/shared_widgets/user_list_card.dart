@@ -79,14 +79,14 @@ class UserCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                user.isVerified == 0 ? Icons.verified : Icons.error_outline,
+                user.isVerified == 01 ? Icons.verified : Icons.error_outline,
                 size: 16,
-                color: user.isVerified == 0
+                color: user.isVerified == 1
                     ? AppColors.success
                     : AppColors.error,
               ),
               const SizedBox(width: 6),
-              Text(user.isVerified == 0 ? "Verified" : "Not Verified"),
+              Text(user.isVerified == 1 ? "Verified" : "Not Verified"),
             ],
           ),
 

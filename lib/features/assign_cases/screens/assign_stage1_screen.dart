@@ -18,7 +18,7 @@ import 'package:casetracking/features/master_api/models/department_model.dart';
 import 'package:casetracking/widgets/appdropdown.dart';
 import 'package:casetracking/widgets/apptextfield.dart';
 import 'package:casetracking/widgets/datetimerow.dart';
-import 'package:casetracking/widgets/scanner.dart';
+import 'package:casetracking/widgets/caseEntryRowWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
